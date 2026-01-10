@@ -3,10 +3,10 @@
 #include "DShot.h"
 
 // ---------------- Motors ----------------
-DShot motor_yaw(&Serial1, DShotType::DShot300);
-DShot motor1(&Serial2, DShotType::DShot300);
-DShot motor2(&Serial6, DShotType::DShot300);
-DShot motor3(&Serial7, DShotType::DShot300);
+DShot motor_yaw(&Serial1, DShotType::DShot300); // pin 1
+DShot motor1(&Serial2, DShotType::DShot300);    // pin 8
+DShot motor2(&Serial6, DShotType::DShot300);    // pin 24
+DShot motor3(&Serial7, DShotType::DShot300);    // pin 29
 
 // ---------------- Encoder ----------------
 AS5047P as5047p(10, 10000000);
