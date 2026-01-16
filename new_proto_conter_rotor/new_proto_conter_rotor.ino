@@ -57,21 +57,35 @@ void setup() {
     motor1.sendCommand(0, false);
     motor2.sendCommand(0, false);
     motor3.sendCommand(0, false);
-    delayMicroseconds(1000);
+    delayMicroseconds(500);
   }
 
-
+  delay(1000);
 
 }
 
+float angle_ccw_positive;
+//General stuff
+float dt;
+unsigned long current_time, prev_time;
+unsigned long print_counter, serial_counter;
+unsigned long blink_counter, blink_delay;
+bool blinkAlternate;
+
 void loop() {
+  //Keep track of what time it is and how much time has elapsed since the last loop
+  prev_time = current_time;      
+  current_time = micros();      
+  dt = (current_time - prev_time)/1000000.0;
+
+
   getCommands();
   failSafe();
   getDesState();
 
   encoder_angle_deg = as5047p.readAngleDegree(true);
 
-  float angle_ccw_positive = 360.0f - encoder_angle_deg;
+  angle_ccw_positive = 360.0f - encoder_angle_deg;
   if (angle_ccw_positive >= 360.0f) angle_ccw_positive -= 360.0f;
 
   encoder_angle_rad = angle_ccw_positive * DEG_TO_RAD;
@@ -82,17 +96,17 @@ void loop() {
   const float m3_ref = 240.0f * DEG_TO_RAD;
 
   //Cyclic mixing
-  float m1 = thro_des
-           - CYCLIC_GAIN * roll_des  * sin(m1_ref - encoder_angle_rad)
-           - CYCLIC_GAIN * pitch_des * cos(m1_ref - encoder_angle_rad);
+  float m1 = thro_des;
+          //  - CYCLIC_GAIN * roll_des  * sin(m1_ref - encoder_angle_rad)
+          //  - CYCLIC_GAIN * pitch_des * cos(m1_ref - encoder_angle_rad);
 
-  float m2 = thro_des
-           - CYCLIC_GAIN * roll_des  * sin(m2_ref - encoder_angle_rad)
-           - CYCLIC_GAIN * pitch_des * cos(m2_ref - encoder_angle_rad);
+  float m2 = thro_des;
+          //  - CYCLIC_GAIN * roll_des  * sin(m2_ref - encoder_angle_rad)
+          //  - CYCLIC_GAIN * pitch_des * cos(m2_ref - encoder_angle_rad);
 
-  float m3 = thro_des
-           - CYCLIC_GAIN * roll_des  * sin(m3_ref - encoder_angle_rad)
-           - CYCLIC_GAIN * pitch_des * cos(m3_ref - encoder_angle_rad);
+  float m3 = thro_des;
+          //  - CYCLIC_GAIN * roll_des  * sin(m3_ref - encoder_angle_rad)
+          //  - CYCLIC_GAIN * pitch_des * cos(m3_ref - encoder_angle_rad);
 
   // Clamp
   m1 = constrain(m1, 0.0f, MAX_THRUST);
@@ -105,30 +119,55 @@ void loop() {
   uint16_t d2 = (uint16_t)(m2 * 1999.0f);
   uint16_t d3 = (uint16_t)(m3 * 1999.0f);
 
-  uint16_t dy = (uint16_t)channel_4_pwm;
+  // uint16_t dy = (uint16_t)channel_4_pwm;
 
   //Throttle cut
-  if (thro_des < 0.05f) {
-    d1 = d2 = d3 = dy = 0;
+  if (thro_des < 0.02f) {
+    // d1 = d2 = d3 = dy = 1;
+    d1 = d2 = d3 = 1;
+
   }
 
   motor1.sendThrottle(d1, false);
   motor2.sendThrottle(d2, false);
   motor3.sendThrottle(d3, false);
-  motor_yaw.sendThrottle(dy, false);
+  // motor_yaw.sendThrottle(dy, false);
 
   // Debug print
   static uint32_t lastPrint = 0;
-  if (millis() - lastPrint > 50) {
+  if (millis() - lastPrint > 20) {
     lastPrint = millis();
-    // Serial.print("Enc: "); Serial.print(angle_ccw_positive);
+    Serial.print("Enc: ");
+    Serial.println(angle_ccw_positive);
     Serial.print(" M1: "); Serial.print(d1);
     Serial.print(" M2: "); Serial.print(d2);
     Serial.print(" M3: "); Serial.print(d3);
-    Serial.print(" yaw_motor: "); Serial.println(dy);
+    // Serial.print(" yaw_motor: "); Serial.println(dy);
 
   }
 
+  //Regulate loop rate
+  loopRate(1000); //Do not exceed 2000Hz, all filter parameters tuned to 2000Hz by default
+
+}
+
+
+void loopRate(int freq) {
+  //DESCRIPTION: Regulate main loop rate to specified frequency in Hz
+  /*
+   * It's good to operate at a constant loop rate for filters to remain stable and whatnot. Interrupt routines running in the
+   * background cause the loop rate to fluctuate. This function basically just waits at the end of every loop iteration until 
+   * the correct time has passed since the start of the current loop for the desired loop rate in Hz. 2kHz is a good rate to 
+   * be at because the loop nominally will run between 2.8kHz - 4.2kHz. This lets us have a little room to add extra computations
+   * and remain above 2kHz, without needing to retune all of our filtering parameters.
+   */
+  float invFreq = 1.0/freq*1000000.0;
+  unsigned long checker = micros();
+  
+  //Sit in loop until appropriate time has passed
+  while (invFreq > (checker - current_time)) {
+    checker = micros();
+  }
 }
 
 // ---------------- Helpers ----------------
@@ -178,5 +217,7 @@ bool setZeroAtCurrentPosition()
     Serial.println(err.toArduinoString());
   }
   return ok;
+
+
 }
 
