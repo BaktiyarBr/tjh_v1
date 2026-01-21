@@ -170,7 +170,7 @@ void loop() {
 
   // // Debug print
   // // Serial Plotter-friendly output: one line = one sample, numbers only.
-  // static uint32_t lastPrint = 0;
+  static uint32_t lastPrint = 0;
   // static bool headerPrinted = false;
 
   // if (!headerPrinted) {
@@ -191,16 +191,16 @@ void loop() {
   //   Serial.println(d3);
   // }
 
-  // if (millis() - lastPrint > 20) {
-  //   lastPrint = millis();
-  //   Serial.print("Enc: m1 pos "); Serial.print(a1 * RAD_TO_DEG);
-  //   Serial.print("  Enc: m2 pos "); Serial.print(a2 * RAD_TO_DEG);
-  //   Serial.print("  Enc: m3 pos "); Serial.print(a3 * RAD_TO_DEG);
+  if (millis() - lastPrint > 20) {
+    lastPrint = millis();
+    Serial.print("Enc: m1 pos "); Serial.print(a1 * RAD_TO_DEG);
+    Serial.print("  Enc: m2 pos "); Serial.print(a2 * RAD_TO_DEG);
+    Serial.print("  Enc: m3 pos "); Serial.print(a3 * RAD_TO_DEG);
 
-  //   Serial.print("  d(m2): "); Serial.print(d1);
-  //   Serial.print("  d(m3): "); Serial.print(d2);
-  //   Serial.print("  d(m5): "); Serial.println(d3);
-  // }
+    Serial.print("  d(m2): "); Serial.print(d1);
+    Serial.print("  d(m3): "); Serial.print(d2);
+    Serial.print("  d(m5): "); Serial.println(d3);
+  }
 
 }
 
